@@ -39,12 +39,9 @@ class server
 		int connfd; // connection file descriptor
 
 		struct sockaddr_in server_addr, client_addr; // server and client address
-		
 		// Constructor
-		server(char* argv[])
+		server()
 		{	
-			// Get the port number
-			port = atoi(argv[1]);
 
 			// Initialize the client status and client pairups
 			for(int i=0; i<MAX; i++){
@@ -53,6 +50,16 @@ class server
 			}
 		}
 		
+		/**
+		 * @brief Set the port object
+		 * 
+		 * @param argv
+		 * 
+		 * @return void
+		 * 
+		 */
+		void set_port(char**);
+
 		/**
 		 * @brief Get the Socket Number object
 		 * 
@@ -179,7 +186,7 @@ void *handler(void *arg)
         string client = s.read_from_client(connfd);
 
 		pthread_mutex_lock(&mylock);
-		cout << "Handler Locked using Mutex" << endl;
+		cout << "[MUTEX]: Handler Locked" << endl;
 		if(client.compare("#CLOSE#") == 0)
 		{
 			s.write_to_client("ABORT", connfd);
@@ -203,7 +210,7 @@ void *handler(void *arg)
 				client_pairups[connfd] = -1;
 			}
 			s.detach_client(connfd);
-			cout << "Handler unlocked using Mutex" << endl;
+			cout << "[MUTEX]: Handler Released" << endl;
 			cout << string(50, '-') << endl;
 			pthread_mutex_unlock(&mylock);
 			pthread_exit(NULL);
@@ -306,6 +313,7 @@ void *handler(void *arg)
 
 int main(int argc, char* argv[])
 {
+
     if(argc < 2)
     {
         cout << "Format: ./chat_server <PORT NUMBER>" << endl;
@@ -315,7 +323,7 @@ int main(int argc, char* argv[])
 	// signal handling
     signal(SIGINT, signal_handler);
 
-	server s(argv);
+	s.set_port(argv);
 
     s.initialize_socket_fd();
     if(s.server_socket_fd < 0)
@@ -422,4 +430,9 @@ void server::write_to_client(string s, int a)
 	// Write back to the server
 	char *ptr = &s[0];
 	write(a, ptr, 8 * sizeof(s));
+}
+
+void server::set_port(char* argv[])
+{
+	port = atoi(argv[1]);
 }
